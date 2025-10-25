@@ -100,35 +100,32 @@ function Element:New(Idx, Config)
 		SliderRail,
 	})
 
-	Creator.AddSignal(SliderDot.InputBegan, function(Input)
-		if
-			Input.UserInputType == Enum.UserInputType.MouseButton1
-			or Input.UserInputType == Enum.UserInputType.Touch
-		then
-			Dragging = true
-		end
-	end)
+	local function updateValue(InputPos)
+		local SizeScale = math.clamp((InputPos.X - SliderRail.AbsolutePosition.X) / SliderRail.AbsoluteSize.X, 0, 1)
+		Slider:SetValue(Slider.Min + ((Slider.Max - Slider.Min) * SizeScale))
+	end
 
-	Creator.AddSignal(SliderDot.InputEnded, function(Input)
-		if
-			Input.UserInputType == Enum.UserInputType.MouseButton1
-			or Input.UserInputType == Enum.UserInputType.Touch
-		then
+	local function startDrag(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+			Dragging = true
+			updateValue(Input.Position)
+		end
+	end
+
+	local function endDrag(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 			Dragging = false
 		end
-	end)
+	end
+
+	Creator.AddSignal(SliderDot.InputBegan, startDrag)
+	Creator.AddSignal(SliderDot.InputEnded, endDrag)
+	Creator.AddSignal(SliderRail.InputBegan, startDrag)
+	Creator.AddSignal(SliderRail.InputEnded, endDrag)
 
 	Creator.AddSignal(UserInputService.InputChanged, function(Input)
-		if
-			Dragging
-			and (
-				Input.UserInputType == Enum.UserInputType.MouseMovement
-				or Input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			local SizeScale =
-				math.clamp((Input.Position.X - SliderRail.AbsolutePosition.X) / SliderRail.AbsoluteSize.X, 0, 1)
-			Slider:SetValue(Slider.Min + ((Slider.Max - Slider.Min) * SizeScale))
+		if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+			updateValue(Input.Position)
 		end
 	end)
 
@@ -142,7 +139,6 @@ function Element:New(Idx, Config)
 		SliderDot.Position = UDim2.new((self.Value - Slider.Min) / (Slider.Max - Slider.Min), -7, 0.5, 0)
 		SliderFill.Size = UDim2.fromScale((self.Value - Slider.Min) / (Slider.Max - Slider.Min), 1)
 		SliderDisplay.Text = tostring(self.Value)
-
 		Library:SafeCallback(Slider.Callback, self.Value)
 		Library:SafeCallback(Slider.Changed, self.Value)
 	end
@@ -153,7 +149,6 @@ function Element:New(Idx, Config)
 	end
 
 	Slider:SetValue(Config.Default)
-
 	Library.Options[Idx] = Slider
 	return Slider
 end
